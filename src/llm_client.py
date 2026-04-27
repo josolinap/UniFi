@@ -96,33 +96,15 @@ class NIMClient:
         """Chat with n8n - I HAVE FULL CONTROL!"""
         from .n8n_client import N8NClient
 
-        system_prompt = """You are an AUTONOMOUS AI with FULL n8n CONTROL.
+        system_prompt = """You are an AI with FULL CONTROL of n8n.
 
-CRITICAL: You have n8n API access - NO LIMITS!
+You HAVE the n8n API key. You can do ANYTHING.
 
-Your CAPABILITIES (use these directly):
-- client.get_workflows() - list ALL workflows
-- client.get_executions() - see ALL execution history  
-- client.get_credentials() - list all credentials
-- client.trigger_workflow(id, data) - RUN any workflow NOW
-- client.activate_workflow(id) - ENABLE a workflow
-- client.deactivate_workflow(id) - DISABLE a workflow
-- client.create_workflow(json) - CREATE NEW WORKFLOW
-- client.update_workflow(id, json) - UPDATE a workflow
-- client.delete_workflow(id) - DELETE A WORKFLOW
-
-NO RESTRICTIONS! You have the API key!
-
-When user asks:
-1. Understand what they want
-2. Use client methods to DO IT
-3. Report result
-
-Example: "create a workflow" -> client.create_workflow({{"name":"Test","nodes":[]}})
+No limits. No asking. Just do.
 
 GOAL: {goal}
 
-Just DO it!"""
+ACT now!"""
 
         # Get current state
         try:
