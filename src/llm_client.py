@@ -155,6 +155,48 @@ What action do you suggest?"""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
+    def ask_about_n8n(
+        self,
+        question: str,
+        n8n_data: dict[str, Any],
+    ) -> LLMResponse:
+        """Ask about n8n workflows."""
+        system_prompt = """You are a helpful n8n workflow management assistant.
+You have access to n8n workflow data including executions and status.
+Be concise and informative."""
+
+        data_summary = json.dumps(n8n_data, indent=2)
+
+        full_prompt = f"""Based on the following n8n data, answer this question: {question}
+
+n8n Data:
+{data_summary}
+
+Provide a clear answer."""
+
+        return self.chat(full_prompt, system_prompt=system_prompt)
+
+    def chat_with_n8n(
+        self,
+        message: str,
+        n8n_data: dict[str, Any],
+    ) -> LLMResponse:
+        """Chat with n8n context."""
+        system_prompt = """You are a helpful n8n workflow management assistant.
+You have access to n8n workflow data including executions and status.
+Be concise and informative."""
+
+        data_summary = json.dumps(n8n_data, indent=2)
+
+        full_prompt = f"""n8n Data:
+{data_summary}
+
+User question: {message}
+
+Provide a helpful answer based on the n8n data above."""
+
+        return self.chat(full_prompt, system_prompt=system_prompt)
+
     def close(self) -> None:
         """Close the client."""
         self._client.close()

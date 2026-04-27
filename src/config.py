@@ -18,7 +18,8 @@ class Settings(BaseSettings):
 
     telegram_bot_token: str = Field(default="", alias="TELEGRAM_BOT_TOKEN", description="Telegram bot token from @BotFather")
     telegram_owner_chat_id: str = Field(default="", alias="TELEGRAM_OWNER_CHAT_ID", description="Telegram chat ID for owner")
-    unifi_api_key: str = Field(default="", alias="UNIFI_API_KEY", description="UniFi API key from unifi.ui.com")
+    n8n_api_key: str = Field(default="", alias="N8N_API_KEY", description="n8n API key")
+    n8n_base_url: str = Field(default="", alias="N8N_BASE_URL", description="n8n instance URL (e.g., https://n8n.example.com)")
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY", description="NVIDIA API key from build.nvidia.com")
     nvidia_model: str = Field(
         default="z-ai/glm4.7",
@@ -50,13 +51,13 @@ def create_env_example() -> None:
         "TELEGRAM_BOT_TOKEN=",
         "TELEGRAM_OWNER_CHAT_ID=",
         "",
-        "# UniFi Configuration",
-        "UNIFI_API_KEY=",
-        "# UNIFI_SITE_ID=  # Optional: specify site ID if needed",
+        "# n8n Configuration",
+        "N8N_API_KEY=",
+        "N8N_BASE_URL=",
         "",
         "# NVIDIA Configuration",
         "NVIDIA_API_KEY=",
-        "# NVIDA_MODEL=nvidia/llama-3.1-nemotron-nano-8b-v1",
+        "# NVIDIA_MODEL=z-ai/glm4.7",
     ]
     _env_example.write_text("\n".join(lines))
 
@@ -75,8 +76,10 @@ def validate_required() -> list[str]:
         missing.append("TELEGRAM_BOT_TOKEN")
     if not settings.telegram_owner_chat_id:
         missing.append("TELEGRAM_OWNER_CHAT_ID")
-    if not settings.unifi_api_key:
-        missing.append("UNIFI_API_KEY")
+    if not settings.n8n_api_key:
+        missing.append("N8N_API_KEY")
+    if not settings.n8n_base_url:
+        missing.append("N8N_BASE_URL")
     if not settings.nvidia_api_key:
         missing.append("NVIDIA_API_KEY")
 

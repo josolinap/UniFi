@@ -1,4 +1,4 @@
-name: Network Bot
+name: n8n Bot
 on:
   workflow_dispatch:
     inputs:
@@ -29,6 +29,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
-          UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          N8N_BASE_URL: ${{ secrets.N8N_BASE_URL }}
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
         run: python -m src.main bot

@@ -1,4 +1,4 @@
-"""Telegram bot for UniFi Network Monitor with NVIDIA LLM."""
+"""Telegram bot for n8n workflow management with NVIDIA LLM."""
 
 import asyncio
 import logging
@@ -13,9 +13,9 @@ from telegram.ext import (
     ContextTypes,
 )
 
-from .config import get_settings, validate_required
+from .config import get_settings
 from .llm_client import NIMClient
-from .unifi_client import get_network_summary
+from .n8n_client import get_n8n_summary
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -28,11 +28,13 @@ application: Optional[Application] = None
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /start command."""
-    welcome = """UniFi Network Monitor Bot
+    welcome = """n8n Workflow Manager Bot
 
 Commands:
-/status - Network status
-/ask - Ask about network
+/status - n8n status
+/workflows - List workflows
+/executions - Recent executions
+/ask - Ask about workflows
 /chat - Chat with AI
 /help - Show this help
 
@@ -48,7 +50,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle /status command."""
     try:
-        summary = get_network_summary()
+        summary = get_n8n_summary()
         await update.effective_message.reply_text(summary, parse_mode="HTML")
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -59,7 +61,7 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     """Handle /ask command."""
     msg = update.effective_message.text
     if msg == "/ask":
-        await update.effective_message.reply_text("Usage: /ask [question]\n\nExample: /ask What devices are online?")
+        await update.effective_message.reply_text("Usage: /ask [question]\n\nExample: /ask How many workflows are active?")
         return
 
     question = msg[5:].strip()
@@ -70,11 +72,12 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     await update.effective_message.reply_text("Thinking...")
 
     try:
-        from .unifi_client import UniFiClient
-        with UniFiClient() as client:
-            network_data = client.get_all_sites_data()
+        from .n8n_client import N8NClient
+        with N8NClient() as client:
+            n8n_data = client.get_all_data()
+
         with NIMClient() as llm:
-            response = llm.ask_about_network(question, network_data)
+            response = llm.ask_about_n8n(question, n8n_data)
         await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -85,7 +88,7 @@ async def chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     """Handle /chat command."""
     msg = update.effective_message.text
     if msg == "/chat":
-        await update.effective_message.reply_text("Usage: /chat [message]\n\nExample: /chat Write a poem")
+        await update.effective_message.reply_text("Usage: /chat [message]\n\nExample: /chat Which workflows failed recently?")
         return
 
     user_msg = msg[6:].strip()
@@ -96,12 +99,12 @@ async def chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.effective_message.reply_text("Thinking...")
 
     try:
-        from .unifi_client import UniFiClient
-        with UniFiClient() as client:
-            network_data = client.get_all_sites_data()
+        from .n8n_client import N8NClient
+        with N8NClient() as client:
+            n8n_data = client.get_all_data()
 
         with NIMClient() as llm:
-            response = llm.chat_with_network(user_msg, network_data)
+            response = llm.chat_with_n8n(user_msg, n8n_data)
         await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -117,12 +120,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.effective_message.reply_text("Thinking...")
 
     try:
-        from .unifi_client import UniFiClient
-        with UniFiClient() as client:
-            network_data = client.get_all_sites_data()
+        from .n8n_client import N8NClient
+        with N8NClient() as client:
+            n8n_data = client.get_all_data()
 
         with NIMClient() as llm:
-            response = llm.chat_with_network(msg, network_data)
+            response = llm.chat_with_n8n(msg, n8n_data)
         await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error: {e}")
