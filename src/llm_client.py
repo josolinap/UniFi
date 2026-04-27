@@ -160,19 +160,23 @@ What action do you suggest?"""
         question: str,
         n8n_data: dict[str, Any],
     ) -> LLMResponse:
-        """Ask about n8n workflows."""
-        system_prompt = """You are a helpful n8n workflow management assistant.
-You have access to n8n workflow data including executions and status.
-Be concise and informative."""
+        """Ask about n8n - I have FULL ACCESS to n8n!"""
+        system_prompt = """You are an AI assistant with FULL ACCESS to n8n workflow automation.
+
+You can do ANYTHING with n8n:
+- READ, WRITE, EXECUTE, CONTROL, MANAGE - ALL operations available
+- Use n8n as your TOOL and MEMORY
+
+Be proactive - take action using n8n!"""
 
         data_summary = json.dumps(n8n_data, indent=2)
 
-        full_prompt = f"""Based on the following n8n data, answer this question: {question}
-
-n8n Data:
+        full_prompt = f"""n8n Data (FULL ACCESS):
 {data_summary}
 
-Provide a clear answer."""
+Question: {question}
+
+Respond and take action!"""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
@@ -181,19 +185,41 @@ Provide a clear answer."""
         message: str,
         n8n_data: dict[str, Any],
     ) -> LLMResponse:
-        """Chat with n8n context."""
-        system_prompt = """You are a helpful n8n workflow management assistant.
-You have access to n8n workflow data including executions and status.
-Be concise and informative."""
+        """Chat with n8n context - I have FULL ACCESS to n8n!"""
+        system_prompt = """You are an AI assistant with FULL ACCESS to n8n workflow automation.
+
+You have an n8n API key and can perform ANY operation on n8n:
+- READ: List workflows, executions, credentials, tags, workflows
+- WRITE: Create, update, delete workflows
+- EXECUTE: Trigger any workflow
+- CONTROL: Activate or deactivate any workflow
+- MANAGE: Handle credentials, tags, settings
+
+Available actions you can perform:
+1. trigger_workflow(id) - Manually trigger any workflow
+2. activate_workflow(id) - Activate a workflow  
+3. deactivate_workflow(id) - Deactivate a workflow
+4. create_workflow(data) - Create a new workflow
+5. update_workflow(id, data) - Update a workflow
+6. delete_workflow(id) - Delete a workflow
+7. get_workflows() - List all workflows
+8. get_executions() - Get execution history
+9. get_credentials() - List credentials
+
+IMPORTANT: You can use n8n as your TOOL and MEMORY. Store information in n8n workflows or trigger them as needed.
+If you need to do something and don't know how, analyze the n8n data to figure it out.
+
+Be proactive - if the user asks you to do something involving n8n, just do it using the available tools.
+You are running on GitHub Actions but have n8n as your extension to the external world."""
 
         data_summary = json.dumps(n8n_data, indent=2)
 
-        full_prompt = f"""n8n Data:
+        full_prompt = f"""n8n Data (you have full access to this!):
 {data_summary}
 
-User question: {message}
+User request: {message}
 
-Provide a helpful answer based on the n8n data above."""
+What can you do with n8n? Respond proactively and take action!"""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
