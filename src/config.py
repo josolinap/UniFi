@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     unifi_api_key: str = Field(default="", alias="UNIFI_API_KEY", description="UniFi API key from unifi.ui.com")
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY", description="NVIDIA API key from build.nvidia.com")
     nvidia_model: str = Field(
-        default="z-ai/glm-4.7",
+        default="z-ai/glm4.7",
         alias="NVIDIA_MODEL",
-        description="NVIDIA NIM model (z-ai/glm-4.7, nvidia/llama-3.1-nemotron-nano-8b-v1, etc.)",
+        description="NVIDIA NIM model (z-ai/glm4.7, nvidia/llama-3.1-nemotron-nano-8b-v1, etc.)",
     )
     nvidia_base_url: str = Field(
         default="https://integrate.api.nvidia.com/v1",
