@@ -237,42 +237,19 @@ class UniFiClient:
         }
 
         # If no sites but have devices, create a placeholder
-        if not sites and all_devices:
+        if not sites and devices:
             site_data = {
                 "id": "default",
                 "name": "My Network",
                 "desc": "All devices",
-                "devices": all_devices,
-                "devices_online": sum(1 for d in all_devices if d.get("state") == "1"),
-                "devices_total": len(all_devices),
+                "devices": devices,
+                "devices_online": sum(1 for d in devices if d.get("state") == "1"),
+                "devices_total": len(devices),
                 "clients": 0,
                 "alerts": [],
             }
             result["sites"].append(site_data)
             return result
-
-        # If still no data, try hosts endpoint
-        if not sites and not all_devices:
-            try:
-                hosts = self._client.get("/v1/hosts", headers=self._headers)
-                if hosts.status_code == 200:
-                    host_data = hosts.json().get("data", [])
-                    if host_data:
-                        site_data = {
-                            "id": "hosts",
-                            "name": "UniFi Hosts",
-                            "desc": f"{len(host_data)} host(s)",
-                            "devices": host_data,
-                            "devices_online": len(host_data),
-                            "devices_total": len(host_data),
-                            "clients": 0,
-                            "alerts": [],
-                        }
-                        result["sites"].append(site_data)
-                        result["total_devices"] = len(host_data)
-                        return result
-            except Exception:
-                pass
 
         # Even if empty, provide placeholder
         if not result["sites"]:
