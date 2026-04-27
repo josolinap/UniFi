@@ -1,0 +1,7 @@
+name: Network Check
+on: workflow_dispatch
+jobs:
+  ready:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Ready"
