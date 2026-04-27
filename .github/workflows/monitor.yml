@@ -43,7 +43,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
         run: |
-          python -c "from src.unifi_client import UniFiClient; client = UniFiClient(); data = client.get_all_sites_data(); client.close(); print('Sites:', len(data.get('sites', []))"
+          python -c "from src.unifi_client import UniFiClient; client = UniFiClient(); data = client.get_all_sites_data(); client.close(); print('Sites:', len(data.get('sites', [])))"
 
       - name: Summary
         run: echo "Monitor check completed successfully"
