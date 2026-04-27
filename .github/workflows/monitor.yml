@@ -37,25 +37,13 @@ jobs:
         run: |
           python -m src.main status --check-env
 
-      - name: Get network data
+      - name: Run monitor check
         env:
           UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
-        run: python -c "import json; from src.unifi_client import UniFiClient; client = UniFiClient(); data = client.get_all_sites_data(); client.close(); print('Sites:', len(data.get('sites', [])[:1]))"
-        continue-on-error: true
-
-      - name: Check for offline devices
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
         run: |
-          python -c "import json; data = {}; offline = []; print('No data')" >> $GITHUB_OUTPUT offline_devices.txt
-        continue-on-error: true
-
-      - name: Send Telegram alert
-        uses: appleboy/telegram-action@v0.1.1
-        if: false
-        with:
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          chat_id: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
-          message: "Network Monitor check completed"
-        continue-on-error: true
+          python -c "from src.unifi_client import UniFiClient; client = UniFiClient(); data = client.get_all_sites_data(); client.close(); print('Sites:', len(data.get('sites', []))"
 
       - name: Summary
-        run: echo "Monitor check completed"
+        run: echo "Monitor check completed successfully"
