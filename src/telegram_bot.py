@@ -96,8 +96,12 @@ async def chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.effective_message.reply_text("Thinking...")
 
     try:
+        from .unifi_client import UniFiClient
+        with UniFiClient() as client:
+            network_data = client.get_all_sites_data()
+
         with NIMClient() as llm:
-            response = llm.chat(user_msg)
+            response = llm.chat_with_network(user_msg, network_data)
         await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error: {e}")
@@ -113,8 +117,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.effective_message.reply_text("Thinking...")
 
     try:
+        from .unifi_client import UniFiClient
+        with UniFiClient() as client:
+            network_data = client.get_all_sites_data()
+
         with NIMClient() as llm:
-            response = llm.chat(msg)
+            response = llm.chat_with_network(msg, network_data)
         await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error: {e}")

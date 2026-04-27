@@ -109,6 +109,28 @@ Provide a clear answer."""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
+    def chat_with_network(
+        self,
+        message: str,
+        network_data: dict[str, Any],
+    ) -> LLMResponse:
+        """Chat with network context."""
+        system_prompt = """You are a helpful UniFi network administrator assistant.
+You have access to real-time UniFi network data. Always use the network data provided to answer questions about the network.
+If the data is empty or shows no sites, mention that the UniFi API returns no data and the UDM may not be linked to Site Manager.
+Be concise and informative."""
+
+        data_summary = json.dumps(network_data, indent=2)
+
+        full_prompt = f"""Network Data:
+{data_summary}
+
+User question: {message}
+
+Provide a helpful answer based on the network data above."""
+
+        return self.chat(full_prompt, system_prompt=system_prompt)
+
     def suggest_action(
         self,
         action_request: str,
