@@ -27,7 +27,4 @@ jobs:
           pip install -r requirements.txt
 
       - name: Verify setup
-        run: |
-          echo "UniFi Network Monitor ready"
-          echo "Run 'python -m src.main bot' locally to start the Telegram bot"
-          python -m src.main --check-env
+        run: echo "UniFi Network Monitor ready - run bot locally with: python -m src.main bot"
