@@ -141,15 +141,23 @@ class UniFiClient:
 
     def get_sites(self) -> list[dict[str, Any]]:
         """Get all accessible sites."""
-        response = self._client.get("/api/s", headers=self._headers)
+        response = self._client.get("/v1/sites", headers=self._headers)
         response.raise_for_status()
         data = response.json()
         return data.get("data", [])
 
+    def get_all_devices(self) -> list[dict[str, Any]]:
+        """Get all devices across all sites."""
+        response = self._client.get("/v1/devices", headers=self._headers)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("data", [])
+        return []
+
     def get_site_devices(self, site_id: str) -> list[UniFiDevice]:
         """Get all devices in a site."""
         response = self._client.get(
-            f"/api/s/{site_id}/stat/device",
+            f"/v1/sites/{site_id}/devices",
             headers=self._headers,
         )
         response.raise_for_status()
@@ -164,7 +172,7 @@ class UniFiClient:
     def get_site_clients(self, site_id: str) -> list[dict[str, Any]]:
         """Get all clients in a site."""
         response = self._client.get(
-            f"/api/s/{site_id}/stat/sta",
+            f"/v1/sites/{site_id}/clients",
             headers=self._headers,
         )
         response.raise_for_status()
@@ -174,27 +182,38 @@ class UniFiClient:
     def get_site_alerts(self, site_id: str) -> list[dict[str, Any]]:
         """Get alerts in a site."""
         response = self._client.get(
-            f"/api/s/{site_id}/stat/alarm",
+            f"/v1/sites/{site_id}/alarms",
             headers=self._headers,
         )
-        response.raise_for_status()
+        if response.status_code != 200:
+            return []
         data = response.json()
         return data.get("data", [])
 
     def get_network_health(self, site_id: str) -> dict[str, Any]:
         """Get network health metrics for a site."""
         response = self._client.get(
-            f"/api/s/{site_id}/stat/health",
+            f"/v1/sites/{site_id}/health",
             headers=self._headers,
         )
-        response.raise_for_status()
+        if response.status_code != 200:
+            return {}
         data = response.json()
         return data.get("data", {})
 
     def get_all_sites_data(self) -> dict[str, Any]:
         """Get comprehensive data for all sites."""
-        sites = self.get_sites()
-        result = {"sites": [], "total_devices": 0, "total_clients": 0}
+        try:
+            sites = self.get_sites()
+        except Exception:
+            sites = []
+
+        try:
+            all_devices = self.get_all_devices()
+        except Exception:
+            all_devices = []
+
+        result = {"sites": [], "total_devices": len(all_devices), "total_clients": 0}
 
         for site in sites:
             site_id = site.get("id") or site.get("_id")
@@ -203,24 +222,43 @@ class UniFiClient:
             if not site_id:
                 continue
 
-            devices = self.get_site_devices(site_id)
-            clients = self.get_site_clients(site_id)
-            alerts = self.get_site_alerts(site_id)
+            try:
+                devices = self.get_site_devices(site_id)
+            except Exception:
+                devices = []
+
+            try:
+                clients = self.get_site_clients(site_id)
+            except Exception:
+                clients = []
+
+            try:
+                alerts = self.get_site_alerts(site_id)
+            except Exception:
+                alerts = []
+
+            device_list = []
+            devices_online = 0
+            for d in devices:
+                if isinstance(d, UniFiDevice):
+                    device_list.append(d.__dict__)
+                    if d.is_online():
+                        devices_online += 1
+                else:
+                    device_list.append(d)
 
             site_data = {
                 "id": site_id,
                 "name": site_name,
                 "desc": site.get("desc", ""),
-                "devices": [d.__dict__ for d in devices],
-                "devices_online": sum(1 for d in devices if d.is_online()),
+                "devices": device_list,
+                "devices_online": devices_online,
                 "devices_total": len(devices),
                 "clients": len(clients),
                 "alerts": alerts[-10:] if alerts else [],
             }
 
             result["sites"].append(site_data)
-            result["total_devices"] += len(devices)
-            result["total_clients"] += len(clients)
 
         return result
 
