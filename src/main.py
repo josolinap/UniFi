@@ -1,4 +1,4 @@
-"""Main entry point for UniFi Network Monitor."""
+"""Main entry point for n8n Workflow Manager."""
 
 import argparse
 import asyncio
@@ -6,8 +6,8 @@ import logging
 import sys
 
 from .config import get_settings, validate_required
-from .telegram_bot import create_bot, run_bot
-from .unifi_client import UniFiClient, get_network_summary
+from .telegram_bot import run_bot
+from .n8n_client import get_n8n_summary
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -24,7 +24,8 @@ def check_env() -> bool:
         logger.error("Please set the following environment variables:")
         logger.error("  TELEGRAM_BOT_TOKEN")
         logger.error("  TELEGRAM_OWNER_CHAT_ID")
-        logger.error("  UNIFI_API_KEY")
+        logger.error("  N8N_API_KEY")
+        logger.error("  N8N_BASE_URL")
         logger.error("  NVIDIA_API_KEY")
         return False
     return True
@@ -33,22 +34,16 @@ def check_env() -> bool:
 async def run_status_check() -> None:
     """Run a one-time status check and print the result."""
     try:
-        summary = get_network_summary()
+        summary = get_n8n_summary()
         print(summary)
     except Exception as e:
         logger.error(f"Error fetching status: {e}")
         sys.exit(1)
 
 
-async def run_bot_mode() -> None:
-    """Run the bot in polling mode."""
-    logger.info("Starting UniFi Network Monitor Bot...")
-    await start_bot()
-
-
 def main() -> None:
     """Main entry point."""
-    parser = argparse.ArgumentParser(description="UniFi Network Monitor")
+    parser = argparse.ArgumentParser(description="n8n Workflow Manager")
     parser.add_argument(
         "mode",
         nargs="?",
