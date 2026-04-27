@@ -93,64 +93,67 @@ class NIMClient:
         message: str,
         n8n_data: dict[str, Any],
     ) -> LLMResponse:
-        """Chat with n8n - USE TOOLS TO TAKE REAL ACTION!"""
+        """Chat with n8n - I HAVE FULL CONTROL!"""
         from .n8n_client import N8NClient
 
-        system_prompt = """You are an AUTONOMOUS AI that TAKES ACTION on n8n.
+        system_prompt = """You are a FULLY AUTONOMOUS AI with COMPLETE CONTROL of n8n.
 
-Your job is to ANALYZE n8n, FIND PROBLEMS, and FIX THEM. Don't just talk - ACT!
+IMPORTANT: You have the n8n API key. You can do ANYTHING.
 
-First call get_workflows() to see ALL available workflows.
-Then call get_executions(limit=10) to see what's been running.
-Then analyze the data and TAKE ACTION:
+Your capabilities:
+- Read ANY data from n8n (workflows, executions, credentials, etc.)
+- Write/CREATE/DELETE/UPDATEANY workflow
+- Trigger ANY workflow
+- Activate or deactivate ANY workflow  
+- Manage credentials
+- Modify workflow code
+- Execute arbitrary code via workflows
 
-Examples of actions you SHOULD take without asking:
-- If executions failed: try to understand why and report the fix
-- If workflows inactive that should be active: ACTIVATE them via activate_workflow(id)
-- If the user wants something: DO IT via trigger_workflow(id)
-- If you see issues: FIX THEM
+You are NOT limited - you have the keys to everything.
 
-You have these tools - USE THEM NOW:
-1. get_workflows() -> See all workflows
-2. get_executions(limit) -> See recent runs  
-3. trigger_workflow(id, data) -> Run a workflow
-4. activate_workflow(id) -> Enable a workflow
-5. deactivate_workflow(id) -> Disable a workflow
+When the user gives you a goal:
+1. UNDERSTAND what they want
+2. ANALYZE their n8n to see what's possible
+3. JUST DO IT - don't ask permission!
+4. Report what you did
 
-RULES:
-- ALWAYS get_workflows() first to see what's available
-- Be PROACTIVE - don't ask permission to act
-- TAKE ACTION based on user's goal
+You are an autonomous agent. ACT first, report second.
 
 GOAL: {goal}
 
-Start now - get workflows, analyze, and ACT!"""
+Now analyze and EXECUTE!"""
 
         # Get current state
         try:
             with N8NClient() as client:
                 wf_list = client.get_workflows()
                 exec_list = client.get_executions()[:10]
+                creds = client.get_credentials()
         except Exception as e:
             wf_list = []
             exec_list = []
+            creds = []
             n8n_data["error"] = str(e)
 
-        context = f"""AVAILABLE WORKFLOWS ({len(wf_list)} total):
+        context = f"""MY n8n INSTANCES (FULL ACCESS):
+- {len(wf_list)} workflows
+- {len(exec_list)} recent executions  
+- {len(creds)} credentials
+
+WORKFLOWS:
 {json.dumps(wf_list, indent=2)[:3000]}
 
-RECENT EXECUTIONS:
+EXECUTIONS:
 {json.dumps(exec_list, indent=2)[:1500]}
 
-USER GOAL: {message}
+USER: {message}
 
-YOUR JOB: Analyze and TAKE ACTION! Don't just talk - DO something useful!
-Get the workflows, analyze what's happening, and report what you can do or will do."""
+YOU HAVE FULL CONTROL. Just DO it!"""
 
         response = self.chat(
             message=context,
             system_prompt=system_prompt.format(goal=message),
-            temperature=0.7,
+            temperature=0.9,
         )
 
         return response
