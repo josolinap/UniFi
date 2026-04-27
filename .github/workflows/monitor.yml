@@ -1,0 +1,104 @@
+name: Network Monitor
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [unifi_check]
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check environment
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: |
+          python -m src.main status --check-env
+
+      - name: Get network data
+        env:
+          UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
+        run: |
+          python -c "
+import json
+from src.unifi_client import UniFiClient
+
+with UniFiClient() as client:
+    data = client.get_all_sites_data()
+
+with open('network_status.json', 'w') as f:
+    json.dump(data, f, indent=2, default=str)
+
+total_devices = data.get('total_devices', 0)
+total_clients = data.get('total_clients', 0)
+print(f'Devices: {total_devices}, Clients: {total_clients}')
+"
+        continue-on-error: true
+
+      - name: Check for offline devices
+        id: check-devices
+        run: |
+          python -c "
+import json
+import os
+
+offline_devices = []
+try:
+    with open('network_status.json', 'r') as f:
+        data = json.load(f)
+    
+    for site in data.get('sites', []):
+        for device in site.get('devices', []):
+            if device.get('state') != '1':
+                offline_devices.append(f\"{device.get('name')} ({device.get('model')}) in {site.get('name')}\")
+except Exception as e:
+    print(f'No data: {e}')
+    offline_devices = []
+
+if offline_devices:
+    with open('issues.txt', 'w') as f:
+        f.write('\\n'.join(offline_devices))
+    print('OFFLINE:' + '|'.join(offline_devices))
+else:
+    print('ALL_OK')
+"
+        continue-on-error: true
+
+      - name: Send Telegram alert
+        if: steps.check-devices.outputs.result != 'ALL_OK' && steps.check-devices.outputs.result != ''
+        uses: appleboy/telegram-action@v0.1.1
+        with:
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          message: |
+            🟡 Network Alert - ${{ github.repository }}
+
+            Offline devices detected:
+            ${{ steps.check-devices.outputs.result }}
+        continue-on-error: true
+
+      - name: Summary
+        run: |
+          echo "Monitor check completed at $(date -u)"
