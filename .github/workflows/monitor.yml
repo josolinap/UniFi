@@ -37,13 +37,28 @@ jobs:
         run: |
           python -m src.main status --check-env
 
-      - name: Run monitor check
+      - name: Run monitor check and get status
+        id: status
         env:
           UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
         run: |
-          python -c "from src.unifi_client import UniFiClient; client = UniFiClient(); data = client.get_all_sites_data(); client.close(); print('Sites:', len(data.get('sites', [])))"
+          python -c "from src.unifi_client import get_network_summary; print(get_network_summary())" > status.txt
+          cat status.txt
+          echo "status_output=$(cat status.txt | tr '\n' ' ')" >> $GITHUB_OUTPUT
+
+      - name: Send Telegram message
+        uses: appleboy/telegram-action@v0.1.1
+        if: success()
+        with:
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          chat_id: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          message: |
+            Network Monitor Check
+
+            ${{ steps.status.outputs.status_output || 'Check completed' }}
+
+            Run ID: ${{ github.run_id }}
+        continue-on-error: true
 
       - name: Summary
-        run: echo "Monitor check completed successfully"
+        run: echo "Monitor check completed"
