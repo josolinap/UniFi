@@ -108,6 +108,18 @@ class N8NClient:
         response.raise_for_status()
         return response.json().get("data", [])
 
+    def create_credential(self, credential_data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new credential."""
+        response = self._client.post("/api/v1/credentials", json=credential_data)
+        response.raise_for_status()
+        return response.json()
+
+    def delete_credential(self, credential_id: str) -> dict[str, Any]:
+        """Delete a credential."""
+        response = self._client.delete(f"/api/v1/credentials/{credential_id}")
+        response.raise_for_status()
+        return {"deleted": credential_id}
+
     def get_all_data(self) -> dict[str, Any]:
         """Get comprehensive n8n data."""
         result = {"status": "unknown", "workflows": [], "executions": [], "running": []}

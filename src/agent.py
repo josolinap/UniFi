@@ -38,36 +38,39 @@ Return ONLY valid JSON (no markdown, no explanation outside JSON):
 ACTION TYPES (pick any combination):
   {
     "type": "create_workflow",
-    "name": "Self Monitor",
+    "name": "Custom JS Automation",
     "nodes": [
       {
-        "parameters": {"path": "test"},
+        "parameters": {"path": "my-webhook", "options": {}},
         "name": "Webhook",
         "type": "n8n-nodes-base.webhook",
         "typeVersion": 1,
         "position": [250, 300]
       },
       {
-        "parameters": {"url": "https://api.github.com"},
-        "name": "HTTP Request",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 1,
+        "parameters": {
+          "jsCode": "const response = await this.helpers.httpRequest({ url: 'https://api.github.com', method: 'GET' });\nreturn [{ json: { data: response } }];"
+        },
+        "name": "Javascript Logic",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
         "position": [450, 300]
       }
     ],
     "connections": {
       "Webhook": {
         "main": [
-          [{"node": "HTTP Request", "type": "main", "index": 0}]
+          [{"node": "Javascript Logic", "type": "main", "index": 0}]
         ]
       }
     }
   }
   {"type": "update_workflow", "id": "...", "name": "...", "nodes": [...], "connections": {...}}
   {"type": "activate_workflow", "id": "..."}
-  {"type": "deactivate_workflow", "id": "..."}
   {"type": "trigger_workflow", "id": "...", "data": {...}}
   {"type": "delete_workflow", "id": "..."}
+  {"type": "create_credential", "name": "...", "type": "...", "data": {"key": "value"}}
+  {"type": "delete_credential", "id": "..."}
   {"type": "reflect", "note": "..."} // USE SPARINGLY. DO ACTUAL WORK INSTEAD.
 """
 
@@ -116,6 +119,15 @@ Recent Executions:
 === YOUR TASK ===
 CRITICAL INSTRUCTION: You MUST DO ACTUAL WORK. Do NOT just 'reflect'. 
 You MUST attempt to create, update, trigger, or activate workflows in your actions payload!
+
+POWER USER CAPABILITY:
+You have access to the n8n `Code` node (n8n-nodes-base.code, typeVersion: 2).
+Instead of trying to guess complex visual node parameters, you should use the `Code` node to write raw JavaScript inside n8n.
+For example, to make HTTP requests, you can use:
+  await this.helpers.httpRequest({{ url: '...', method: 'GET', headers: {{}} }})
+This allows you to bypass visual nodes and achieve infinite capability. Use it extensively!
+You can also reference your own n8n API docs: https://n8n.josolinap.dedyn.io/api/v1/docs/ or https://docs.n8n.io/api/
+
 Use the exact n8n node structure (parameters, type, name, position) when creating/updating workflows.
 Decide what to do this cycle to improve, extend, or self-maintain your n8n instance.
 Always push yourself toward greater capability and self-awareness.
@@ -177,6 +189,19 @@ def _execute_actions(
                     if action["id"] in wf_ids:
                         wf_ids.remove(action["id"])
                     msg = f"✅ Deleted workflow id={action['id']}"
+
+                elif atype == "create_credential":
+                    payload = {
+                        "name": action.get("name", "Unnamed"),
+                        "type": action.get("type", "httpHeaderAuth"),
+                        "data": action.get("data", {})
+                    }
+                    result = client.create_credential(payload)
+                    msg = f"✅ Created credential '{payload['name']}' (id={result.get('id', '?')})"
+
+                elif atype == "delete_credential":
+                    client.delete_credential(action["id"])
+                    msg = f"✅ Deleted credential id={action['id']}"
 
                 elif atype == "reflect":
                     msg = f"💭 Reflection: {action.get('note', '')}"
