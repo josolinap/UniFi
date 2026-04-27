@@ -66,6 +66,36 @@ class N8NClient:
         response.raise_for_status()
         return response.json()
 
+    def activate_workflow(self, workflow_id: str) -> dict[str, Any]:
+        """Activate a workflow."""
+        response = self._client.post(f"/api/v1/workflows/{workflow_id}/activate")
+        response.raise_for_status()
+        return response.json()
+
+    def deactivate_workflow(self, workflow_id: str) -> dict[str, Any]:
+        """Deactivate a workflow."""
+        response = self._client.post(f"/api/v1/workflows/{workflow_id}/deactivate")
+        response.raise_for_status()
+        return response.json()
+
+    def create_workflow(self, workflow_data: dict[str, Any]) -> dict[str, Any]:
+        """Create a new workflow."""
+        response = self._client.post("/api/v1/workflows", json=workflow_data)
+        response.raise_for_status()
+        return response.json()
+
+    def update_workflow(self, workflow_id: str, workflow_data: dict[str, Any]) -> dict[str, Any]:
+        """Update a workflow."""
+        response = self._client.put(f"/api/v1/workflows/{workflow_id}", json=workflow_data)
+        response.raise_for_status()
+        return response.json()
+
+    def delete_workflow(self, workflow_id: str) -> dict[str, Any]:
+        """Delete a workflow."""
+        response = self._client.delete(f"/api/v1/workflows/{workflow_id}")
+        response.raise_for_status()
+        return {"deleted": workflow_id}
+
     def get_tags(self) -> list[dict[str, Any]]:
         """Get all tags."""
         response = self._client.get("/api/v1/tags")

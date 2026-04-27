@@ -90,6 +90,26 @@ async def chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if msg == "/chat":
         await update.effective_message.reply_text("Usage: /chat [message]\n\nExample: /chat Which workflows failed recently?")
         return
+    if msg == "/trigger":
+        await update.effective_message.reply_text("Usage: /trigger [workflow_name]\n\nExample: /trigger My Workflow")
+        return
+
+    # Check for trigger command
+    if msg.startswith("/trigger "):
+        wf_name = msg[9:].strip()
+        try:
+            from .n8n_client import N8NClient
+            with N8NClient() as client:
+                workflows = client.get_workflows()
+                wf = next((w for w in workflows if w.get("name", "").lower() == wf_name.lower()), None)
+                if wf:
+                    result = client.trigger_workflow(wf.get("id"))
+                    await update.effective_message.reply_text(f"Triggered: {wf.get('name')}\n\nResult: {result}")
+                else:
+                    await update.effective_message.reply_text(f"Workflow '{wf_name}' not found. Use /workflows to list available.")
+        except Exception as e:
+            await update.effective_message.reply_text(f"Error: {str(e)}")
+        return
 
     user_msg = msg[6:].strip()
     if not user_msg:

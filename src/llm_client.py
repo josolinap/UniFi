@@ -197,6 +197,39 @@ Provide a helpful answer based on the n8n data above."""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
+    def execute_n8n_action(
+        self,
+        action: str,
+        action_type: str,
+        n8n_data: dict[str, Any],
+        target_id: Optional[str] = None,
+        extra_data: Optional[dict[str, Any]] = None,
+    ) -> LLMResponse:
+        """Execute an action on n8n (activate, deactivate, trigger, etc.)."""
+        from .n8n_client import N8NClient
+
+        result = {}
+
+        try:
+            with N8NClient() as client:
+                if action_type == "activate":
+                    result = client.activate_workflow(target_id or action)
+                elif action_type == "deactivate":
+                    result = client.deactivate_workflow(target_id or action)
+                elif action_type == "trigger":
+                    result = client.trigger_workflow(target_id or action, extra_data)
+                elif action_type == "delete":
+                    result = client.delete_workflow(target_id or action)
+                else:
+                    result = {"error": f"Unknown action: {action_type}"}
+        except Exception as e:
+            result = {"error": str(e)}
+
+        return LLMResponse(
+            content=json.dumps(result, indent=2),
+            model=self._settings.nvidia_model,
+        )
+
     def close(self) -> None:
         """Close the client."""
         self._client.close()
