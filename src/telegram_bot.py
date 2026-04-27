@@ -2,8 +2,6 @@
 
 import asyncio
 import logging
-import signal
-import os
 from typing import Optional
 
 from telegram import Update
@@ -146,24 +144,14 @@ def create_bot() -> Application:
 async def start_bot() -> None:
     """Start the bot."""
     app = create_bot()
-
-    stop_event = asyncio.Event()
-
-    def signal_handler(sig, frame):
-        logger.info("Received signal, shutting down...")
-        stop_event.set()
-
-    if os.name != 'nt':
-        signal.signal(signal.SIGTERM, signal_handler)
-        signal.signal(signal.SIGINT, signal_handler)
-
-    await app.start()
-    await app.bot.delete_webhook()
-    logger.info("Bot running. Press Ctrl+C to stop.")
+    await app.initialize()
 
     try:
-        await asyncio.Event().wait(stop_event)
-    except KeyboardInterrupt:
+        await app.start()
+        await app.bot.delete_webhook()
+        logger.info("Bot running. Press Ctrl+C to stop.")
+        await asyncio.sleep(float('inf'))
+    except (KeyboardInterrupt, asyncio.CancelledError):
         logger.info("Shutting down...")
     finally:
         await app.stop()
