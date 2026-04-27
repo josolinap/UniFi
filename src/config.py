@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     telegram_owner_chat_id: str = Field(default="", alias="TELEGRAM_OWNER_CHAT_ID", description="Telegram chat ID for owner")
     unifi_api_key: str = Field(default="", alias="UNIFI_API_KEY", description="UniFi API key from unifi.ui.com")
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY", description="NVIDIA API key from build.nvidia.com")
-    unifi_site_id: Optional[str] = Field(default=None, description="Specific UniFi site ID (optional)")
     nvidia_model: str = Field(
-        default="nvidia/llama-3.1-nemotron-nano-8b-v1",
-        description="NVIDIA NIM model to use (use nvidia/ prefix for free models)",
+        default="z-ai/glm-4.7",
+        alias="NVIDIA_MODEL",
+        description="NVIDIA NIM model (z-ai/glm-4.7, nvidia/llama-3.1-nemotron-nano-8b-v1, etc.)",
     )
     nvidia_base_url: str = Field(
         default="https://integrate.api.nvidia.com/v1",
