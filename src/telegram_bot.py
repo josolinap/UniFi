@@ -71,6 +71,7 @@ This bot provides:
 /alerts - Recent network alerts
 /sites - List all sites
 /ask - Ask a question about your network
+/chat - Chat with AI (any topic)
 /actions - Available network actions
 /help - Show this help message
 
@@ -289,196 +290,40 @@ async def ask_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         with NIMClient() as llm:
             response = llm.ask_about_network(question, network_data)
 
-        await update.effective_message.reply_text(
-            f"<b>Answer:</b>\n\n{response.content}",
-            parse_mode="HTML",
-        )
+        await update.effective_message.reply_text(response.content)
     except Exception as e:
         logger.error(f"Error in ask command: {e}")
-        await update.effective_message.reply_text(
-            f"Error: {str(e)}",
-        )
+        await update.effective_message.reply_text(f"Error: {str(e)}")
 
 
-async def actions_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /actions command."""
-    settings = get_settings()
-    chat_id = str(update.effective_chat.id)
-
-    if chat_id != settings.telegram_owner_chat_id:
-        await update.effective_message.reply_text(
-            "Only the owner can execute actions.",
-        )
-        return
-
-    text = get_available_actions_text()
-    await update.effective_message.reply_text(text, parse_mode="HTML")
-
-
-async def restart_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /restart command."""
-    await handle_action_command(update, context, ActionType.RESTART_DEVICE)
-
-
-async def block_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /block command."""
-    await handle_action_command(update, context, ActionType.BLOCK_CLIENT)
-
-
-async def unblock_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle /unblock command."""
-    await handle_action_command(update, context, ActionType.UNBLOCK_CLIENT)
-
-
-async def handle_action_command(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-    action_type: ActionType,
-) -> None:
-    """Handle action commands with confirmation."""
-    settings = get_settings()
-    chat_id = str(update.effective_chat.id)
-
-    if chat_id != settings.telegram_owner_chat_id:
-        await update.effective_message.reply_text(
-            "Only the owner can execute actions.",
-        )
-        return
-
-    message_text = update.effective_message.text
-    parts = message_text.split()
-
-    if len(parts) < 2:
-        await update.effective_message.reply_text(
-            f"Usage: /{action_type.value} [target]\n"
-            f"Example: /{action_type.value} 11:22:33:44:55:66",
-        )
-        return
-
-    target = parts[1]
-    if not re.match(r"^[0-9a-fA-F:]+$", target):
-        await update.effective_message.reply_text(
-            "Invalid MAC address format.",
-        )
-        return
-
-    with UniFiClient() as client:
-        sites = client.get_sites()
-
-    if not sites:
-        await update.effective_message.reply_text("No sites found.")
-        return
-
-    site_id = sites[0].get("id") or sites[0].get("_id")
-
-    global action_manager
-    if action_manager is None:
-        action_manager = ActionManager()
-
-    action = action_manager.request_action(
-        action_type=action_type,
-        target=target,
-        site_id=site_id or "",
-        chat_id=chat_id,
-        message_id=update.effective_message.message_id,
-    )
-
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm:{target}"),
-            InlineKeyboardButton("❌ Cancel", callback_data=f"cancel:{target}"),
-        ]
-    ])
-
-    await update.effective_message.reply_text(
-        f"<b>Confirm Action</b>\n\n{action.to_confirmation_text()}",
-        reply_markup=keyboard,
-        parse_mode="HTML",
-    )
-
-
-async def callback_query_handler(update: CallbackQuery, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle callback queries from inline keyboards."""
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    if not data:
-        return
-
-    chat_id = str(query.message.chat.id)
-    settings = get_settings()
-
-    if chat_id != settings.telegram_owner_chat_id:
-        await query.edit_message_text("Only the owner can confirm actions.")
-        return
-
-    if data.startswith("confirm:"):
-        target = data.split(":", 1)[1]
-        await handle_confirmation(query, target, confirmed=True)
-    elif data.startswith("cancel:"):
-        target = data.split(":", 1)[1]
-        await handle_confirmation(query, target, confirmed=False)
-
-
-async def handle_confirmation(
-    query: CallbackQuery,
-    target: str,
-    confirmed: bool,
-) -> None:
-    """Handle action confirmation or cancellation."""
-    chat_id = str(query.message.chat.id)
-
-    if confirmed:
-        global action_manager
-        if action_manager is None:
-            action_manager = ActionManager()
-
-        with UniFiClient() as client:
-            sites = client.get_sites()
-
-        if sites:
-            site_id = sites[0].get("id") or sites[0].get("_id")
-            if site_id:
-                result = action_manager.confirm_action(
-                    target=target,
-                    site_id=site_id,
-                    chat_id=chat_id,
-                )
-
-                if result.success:
-                    await query.edit_message_text(f"✅ {result.message}")
-                else:
-                    await query.edit_message_text(f"❌ {result.message}")
-    else:
-        if action_manager:
-            action_manager.cancel_action(
-                target=target,
-                site_id="",
-                chat_id=chat_id,
-            )
-        await query.edit_message_text("❌ Action cancelled.")
-
-
-async def handle_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Handle plain text messages as questions to LLM."""
+async def chat_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /chat command - general chat with LLM."""
     message_text = update.effective_message.text
 
-    if message_text.startswith("/"):
+    if message_text == "/chat":
+        await update.effective_message.reply_text(
+            "<b>Chat with AI</b>\n\n"
+            "Usage: /chat [your message]\n\n"
+            "Use this for general conversation or tasks.\n"
+            "Example: /chat write a poem about networking",
+            parse_mode="HTML",
+        )
+        return
+
+    user_message = message_text[6:].strip()
+    if not user_message:
+        await update.effective_message.reply_text("Please provide a message.")
         return
 
     await update.effective_message.reply_text("Thinking...", parse_mode="HTML")
 
     try:
-        with UniFiClient() as client:
-            network_data = client.get_all_sites_data()
-
         with NIMClient() as llm:
-            response = llm.ask_about_network(message_text, network_data)
+            response = llm.chat(user_message)
 
         await update.effective_message.reply_text(response.content)
     except Exception as e:
-        logger.error(f"Error processing message: {e}")
+        logger.error(f"Error in chat command: {e}")
         await update.effective_message.reply_text(f"Error: {str(e)}")
 
 
@@ -510,6 +355,7 @@ def create_bot() -> Application:
     bot_app.add_handler(CommandHandler("clients", clients_command))
     bot_app.add_handler(CommandHandler("alerts", alerts_command))
     bot_app.add_handler(CommandHandler("ask", ask_command))
+    bot_app.add_handler(CommandHandler("chat", chat_command))
     bot_app.add_handler(CommandHandler("actions", actions_command))
     bot_app.add_handler(CommandHandler("restart", restart_command))
     bot_app.add_handler(CommandHandler("block", block_command))
