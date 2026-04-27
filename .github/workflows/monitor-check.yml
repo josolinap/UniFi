@@ -1,7 +1,34 @@
-name: Network Check
-on: workflow_dispatch
+name: Network Bot
+on:
+  workflow_dispatch:
+    inputs:
+      hours:
+        type: number
+        default: 5
+        description: Hours to run
+        required: false
+
 jobs:
-  ready:
+  bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
     steps:
-      - run: echo "Ready"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          UNIFI_API_KEY: ${{ secrets.UNIFI_API_KEY }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+        run: python -m src.main bot
