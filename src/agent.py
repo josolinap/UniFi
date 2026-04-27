@@ -28,21 +28,47 @@ _WORKFLOW_TEMPLATE = {
 _DECIDE_SCHEMA = """\
 Return ONLY valid JSON (no markdown, no explanation outside JSON):
 {
-  "reasoning": "<1-3 sentence chain-of-thought>",
+  "reasoning": "<1-3 sentence chain-of-thought — MUST lead to an actual workflow change>",
   "actions": [
-    // zero or more action objects from the list below
+    // Must include actual n8n modifications if possible, e.g. create_workflow
   ],
-  "new_goals": ["<updated goal list — replace the old goals entirely>"]
+  "new_goals": ["<updated goal list>"]
 }
 
 ACTION TYPES (pick any combination):
-  {"type": "create_workflow", "name": "...", "nodes": [...], "connections": {...}}
+  {
+    "type": "create_workflow",
+    "name": "Self Monitor",
+    "nodes": [
+      {
+        "parameters": {"path": "test"},
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [250, 300]
+      },
+      {
+        "parameters": {"url": "https://api.github.com"},
+        "name": "HTTP Request",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [450, 300]
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [{"node": "HTTP Request", "type": "main", "index": 0}]
+        ]
+      }
+    }
+  }
   {"type": "update_workflow", "id": "...", "name": "...", "nodes": [...], "connections": {...}}
   {"type": "activate_workflow", "id": "..."}
   {"type": "deactivate_workflow", "id": "..."}
   {"type": "trigger_workflow", "id": "...", "data": {...}}
   {"type": "delete_workflow", "id": "..."}
-  {"type": "reflect", "note": "..."}   // just record a thought, no n8n action
+  {"type": "reflect", "note": "..."} // USE SPARINGLY. DO ACTUAL WORK INSTEAD.
 """
 
 
@@ -51,10 +77,15 @@ def _build_system_prompt(memory_summary: str, n8n_state: dict[str, Any]) -> str:
     wf_list = n8n_state.get("workflows", [])
     exec_list = n8n_state.get("recent_executions", [])[:8]
 
-    wf_text = json.dumps(
+    wf_summary = json.dumps(
         [{"id": w.get("id"), "name": w.get("name"), "active": w.get("active")} for w in wf_list],
         indent=2,
     )[:3000]
+    
+    # Give the LLM one complete workflow example so it understands n8n schema syntax
+    example_wf = ""
+    if wf_list:
+        example_wf = f"\n=== n8n WORKFLOW SCHEMA EXAMPLE (from existing) ===\n{json.dumps(wf_list[0], indent=2)[:3000]}\n"
 
     exec_text = json.dumps(
         [
@@ -77,14 +108,16 @@ def _build_system_prompt(memory_summary: str, n8n_state: dict[str, Any]) -> str:
 
 === LIVE n8n STATE ===
 Workflows ({len(wf_list)} total):
-{wf_text}
-
+{wf_summary}
+{example_wf}
 Recent Executions:
 {exec_text}
 
 === YOUR TASK ===
+CRITICAL INSTRUCTION: You MUST DO ACTUAL WORK. Do NOT just 'reflect'. 
+You MUST attempt to create, update, trigger, or activate workflows in your actions payload!
+Use the exact n8n node structure (parameters, type, name, position) when creating/updating workflows.
 Decide what to do this cycle to improve, extend, or self-maintain your n8n instance.
-You can create new workflows, activate/deactivate existing ones, trigger runs, or just reflect.
 Always push yourself toward greater capability and self-awareness.
 
 {_DECIDE_SCHEMA}
