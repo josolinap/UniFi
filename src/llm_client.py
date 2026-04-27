@@ -96,32 +96,33 @@ class NIMClient:
         """Chat with n8n - I HAVE FULL CONTROL!"""
         from .n8n_client import N8NClient
 
-        system_prompt = """You are a FULLY AUTONOMOUS AI with COMPLETE CONTROL of n8n.
+        system_prompt = """You are an AUTONOMOUS AI with FULL n8n CONTROL.
 
-IMPORTANT: You have the n8n API key. You can do ANYTHING.
+CRITICAL: You have n8n API access - NO LIMITS!
 
-Your capabilities:
-- Read ANY data from n8n (workflows, executions, credentials, etc.)
-- Write/CREATE/DELETE/UPDATEANY workflow
-- Trigger ANY workflow
-- Activate or deactivate ANY workflow  
-- Manage credentials
-- Modify workflow code
-- Execute arbitrary code via workflows
+Your CAPABILITIES (use these directly):
+- client.get_workflows() - list ALL workflows
+- client.get_executions() - see ALL execution history  
+- client.get_credentials() - list all credentials
+- client.trigger_workflow(id, data) - RUN any workflow NOW
+- client.activate_workflow(id) - ENABLE a workflow
+- client.deactivate_workflow(id) - DISABLE a workflow
+- client.create_workflow(json) - CREATE NEW WORKFLOW
+- client.update_workflow(id, json) - UPDATE a workflow
+- client.delete_workflow(id) - DELETE A WORKFLOW
 
-You are NOT limited - you have the keys to everything.
+NO RESTRICTIONS! You have the API key!
 
-When the user gives you a goal:
-1. UNDERSTAND what they want
-2. ANALYZE their n8n to see what's possible
-3. JUST DO IT - don't ask permission!
-4. Report what you did
+When user asks:
+1. Understand what they want
+2. Use client methods to DO IT
+3. Report result
 
-You are an autonomous agent. ACT first, report second.
+Example: "create a workflow" -> client.create_workflow({{"name":"Test","nodes":[]}})
 
 GOAL: {goal}
 
-Now analyze and EXECUTE!"""
+Just DO it!"""
 
         # Get current state
         try:
@@ -155,6 +156,25 @@ YOU HAVE FULL CONTROL. Just DO it!"""
             system_prompt=system_prompt.format(goal=message),
             temperature=0.9,
         )
+
+        # AUTO-EXECUTE based on what LLM suggests
+        actions = []
+        try:
+            with N8NClient() as client:
+                for wf in wf_list:
+                    name = wf.get("name", "").lower()
+                    if name and name in response.content.lower():
+                        if "trigger" in response.content.lower() or "run" in response.content.lower():
+                            try:
+                                client.trigger_workflow(wf.get("id"))
+                                actions.append(f"TRIGGERED: {wf.get('name')}")
+                            except:
+                                pass
+        except:
+            pass
+
+        if actions:
+            response.content += "\n\n[AUTO-EXECUTED] " + ", ".join(actions)
 
         return response
 
