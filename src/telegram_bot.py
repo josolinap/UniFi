@@ -144,21 +144,16 @@ def create_bot() -> Application:
 async def start_bot() -> None:
     """Start the bot."""
     app = create_bot()
-    await app.initialize()
-
-    try:
-        await app.start()
-        await app.bot.delete_webhook()
-        logger.info("Bot running. Press Ctrl+C to stop.")
-        await asyncio.sleep(float('inf'))
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        logger.info("Shutting down...")
-    finally:
-        await app.stop()
+    await app.run_polling(drop_pending_updates=True)
+    logger.info("Bot stopped.")
 
 
 def run_bot() -> None:
     """Run the bot."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
     import nest_asyncio
     nest_asyncio.apply()
     asyncio.run(start_bot())
