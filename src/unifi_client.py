@@ -288,7 +288,7 @@ def get_network_summary() -> str:
         data = client.get_all_sites_data()
 
     if not data.get("sites"):
-        return "⚠️ No UniFi data found.\n\nPossible issues:\n• Your UDM Pro may not be connected to Site Manager\n• No sites configured yet\n• API key needs console association\n\nCheck: https://unifi.ui.com"
+        return "WARNING: No UniFi data found.\n\nPossible issues:\n- Your UDM Pro may not be connected to Site Manager\n- No sites configured yet\n- API key needs console association\n\nCheck: https://unifi.ui.com"
 
     lines = ["<b>Network Status</b>", ""]
 
@@ -298,10 +298,10 @@ def get_network_summary() -> str:
         devices_total = site.get("devices_total", 0)
         clients = site.get("clients", 0)
 
-        status_emoji = "🟢" if devices_online == devices_total else "🟡"
-        lines.append(f"{status_emoji} <b>{name}</b>")
-        lines.append(f"   📱 Devices: {devices_online}/{devices_total} online")
-        lines.append(f"   👥 Clients: {clients}")
+        status_emoji = "[OK]" if devices_online == devices_total else "[WARN]"
+        lines.append(f"{status_emoji} {name}")
+        lines.append(f"   Devices: {devices_online}/{devices_total} online")
+        lines.append(f"   Clients: {clients}")
 
         offline = []
         for d in site.get("devices", []):
