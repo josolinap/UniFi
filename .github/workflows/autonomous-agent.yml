@@ -1,0 +1,60 @@
+name: Autonomous AI Agent
+
+on:
+  # Run every 30 minutes (GitHub's minimum free-tier cron frequency)
+  schedule:
+    - cron: '*/30 * * * *'
+  # Also allow manual runs with custom cycle count
+  workflow_dispatch:
+    inputs:
+      cycles:
+        type: number
+        default: 3
+        description: Number of reasoning cycles to run
+        required: false
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25   # Stay well under the 6-hour limit per run
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Restore the agent memory from the previous run so it can build on itself
+      - name: Restore agent memory
+        uses: actions/cache/restore@v4
+        with:
+          path: agent_memory.json
+          key: agent-memory-${{ github.run_id }}
+          restore-keys: |
+            agent-memory-
+
+      - name: Run autonomous agent
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          N8N_BASE_URL: ${{ secrets.N8N_BASE_URL }}
+          NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
+          AGENT_MAX_CYCLES: ${{ github.event.inputs.cycles || '3' }}
+          AGENT_CYCLE_INTERVAL: "20"
+        run: python -m src.main agent --cycles ${{ github.event.inputs.cycles || '3' }}
+
+      # Always save memory even if the agent errored mid-run
+      - name: Save agent memory
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: agent_memory.json
+          key: agent-memory-${{ github.run_id }}

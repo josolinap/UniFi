@@ -2,10 +2,21 @@ name: n8n Bot
 on:
   workflow_dispatch:
     inputs:
+      mode:
+        type: choice
+        options: [bot, status, agent]
+        default: bot
+        description: Run mode
+        required: false
       hours:
         type: number
         default: 5
-        description: Hours to run
+        description: Hours to run (bot mode)
+        required: false
+      cycles:
+        type: number
+        default: 3
+        description: Agent cycles (agent mode)
         required: false
 
 jobs:
@@ -22,14 +33,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Run bot
+      - name: Run
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           N8N_BASE_URL: ${{ secrets.N8N_BASE_URL }}
           NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
-        run: python -m src.main bot
+        run: python -m src.main ${{ github.event.inputs.mode || 'bot' }}

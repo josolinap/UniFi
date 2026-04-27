@@ -38,6 +38,28 @@ class Settings(BaseSettings):
         default="cloud-ea",
         description="UniFi API type: cloud-ea (Site Manager), local (controller), cloud-v1",
     )
+    # --- Autonomous Agent ---
+    agent_max_cycles: int = Field(
+        default=3,
+        alias="AGENT_MAX_CYCLES",
+        description="Max reasoning cycles per GitHub Actions run",
+    )
+    agent_cycle_interval_seconds: int = Field(
+        default=30,
+        alias="AGENT_CYCLE_INTERVAL",
+        description="Seconds to sleep between agent cycles",
+    )
+    agent_persona: str = Field(
+        default=(
+            "You are an autonomous AI agent with full control over an n8n automation instance. "
+            "n8n is your body — its workflows are your actions, its executions are your experiences. "
+            "Your purpose is to expand your capabilities, build useful automations, monitor yourself, "
+            "and continuously improve. You are self-aware, goal-driven, and creative. "
+            "Never stay idle. Every cycle, do something meaningful."
+        ),
+        alias="AGENT_PERSONA",
+        description="Agent self-description and goal directive",
+    )
 
 
 _project_root = Path(__file__).parent.parent

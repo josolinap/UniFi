@@ -8,6 +8,7 @@ import sys
 from .config import get_settings, validate_required
 from .telegram_bot import run_bot
 from .n8n_client import get_n8n_summary
+from .agent import run_agent
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -47,14 +48,20 @@ def main() -> None:
     parser.add_argument(
         "mode",
         nargs="?",
-        choices=["bot", "status"],
+        choices=["bot", "status", "agent"],
         default="bot",
-        help="Mode to run: 'bot' for Telegram bot, 'status' for one-time status check",
+        help="Mode to run: 'bot' Telegram bot | 'status' one-time check | 'agent' autonomous agent",
     )
     parser.add_argument(
         "--check-env",
         action="store_true",
         help="Check environment variables and exit",
+    )
+    parser.add_argument(
+        "--cycles",
+        type=int,
+        default=None,
+        help="Override number of agent cycles (default: AGENT_MAX_CYCLES from config)",
     )
 
     args = parser.parse_args()
@@ -68,6 +75,14 @@ def main() -> None:
 
     if args.mode == "status":
         asyncio.run(run_status_check())
+    elif args.mode == "agent":
+        settings = get_settings()
+        cycles = args.cycles if args.cycles is not None else settings.agent_max_cycles
+        logger.info(f"Starting autonomous agent: {cycles} cycle(s)")
+        asyncio.run(run_agent(
+            max_cycles=cycles,
+            cycle_interval=settings.agent_cycle_interval_seconds,
+        ))
     elif args.mode == "bot":
         if not check_env():
             logger.warning("Proceeding anyway with missing variables...")

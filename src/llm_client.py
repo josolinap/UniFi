@@ -1,4 +1,4 @@
-"""NVIDIA NIM (LLM) client for natural language interactions."""
+"""NVIDIA NIM (LLM) client for natural language interactions and agent decisions."""
 
 import json
 from dataclasses import dataclass, field
@@ -167,6 +167,32 @@ YOU HAVE FULL CONTROL. Just DO it!"""
     ) -> LLMResponse:
         """Ask about n8n - TAKE ACTION!"""
         return self.chat_with_n8n(question, n8n_data)
+
+    def agent_decide(self, system_prompt: str) -> LLMResponse:
+        """Autonomous agent decision: given a full system prompt (memory + n8n state + schema),
+        ask the LLM to return a structured JSON action plan."""
+        response = self._client.chat.completions.create(
+            model=self._settings.nvidia_model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": "Decide what to do this cycle. Reply with valid JSON only."},
+            ],
+            temperature=0.7,
+            max_tokens=4096,
+        )
+        choice = response.choices[0]
+        usage = {
+            "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+            "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+            "total_tokens": response.usage.total_tokens if response.usage else 0,
+        }
+        reasoning = getattr(choice.message, "reasoning_content", None)
+        return LLMResponse(
+            content=choice.message.content or "",
+            model=response.model,
+            usage=usage,
+            reasoning_content=reasoning,
+        )
 
     def close(self) -> None:
         """Close the client."""
