@@ -1,10 +1,8 @@
 name: Network Monitor
-
-on:
-  workflow_dispatch:
-
+on: workflow_dispatch
 jobs:
   ready:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Ready - run bot locally with: python -m src.main bot"
+      - run: echo "Done"
+        shell: bash
