@@ -141,14 +141,15 @@ class UniFiClient:
 
     def get_sites(self) -> list[dict[str, Any]]:
         """Get all accessible sites."""
-        response = self._client.get("/v1/sites", headers=self._headers)
+        # Try Site Manager cloud API
+        response = self._client.get("/ea/sites", headers=self._headers)
         response.raise_for_status()
         data = response.json()
         return data.get("data", [])
 
     def get_all_devices(self) -> list[dict[str, Any]]:
         """Get all devices across all sites."""
-        response = self._client.get("/v1/devices", headers=self._headers)
+        response = self._client.get("/ea/devices", headers=self._headers)
         if response.status_code == 200:
             data = response.json()
             return data.get("data", [])
@@ -157,7 +158,7 @@ class UniFiClient:
     def get_site_devices(self, site_id: str) -> list[UniFiDevice]:
         """Get all devices in a site."""
         response = self._client.get(
-            f"/v1/sites/{site_id}/devices",
+            f"/ea/sites/{site_id}/devices",
             headers=self._headers,
         )
         response.raise_for_status()
@@ -203,17 +204,37 @@ class UniFiClient:
 
     def get_all_sites_data(self) -> dict[str, Any]:
         """Get comprehensive data for all sites."""
-        try:
-            sites = self.get_sites()
-        except Exception:
-            sites = []
+        sites = []
+        devices = []
+        raw_response = {}
 
+        # Try Site Manager cloud API /ea/sites
         try:
-            all_devices = self.get_all_devices()
-        except Exception:
-            all_devices = []
+            response = self._client.get("/ea/sites", headers=self._headers)
+            if response.status_code == 200:
+                data = response.json()
+                sites = data.get("data", [])
+                raw_response["ea/sites"] = data
+        except Exception as e:
+            raw_response["ea/sites"] = {"error": str(e)}
 
-        result = {"sites": [], "total_devices": len(all_devices), "total_clients": 0}
+        # Try /ea/devices (may require specific site)
+        try:
+            response = self._client.get("/ea/devices", headers=self._headers)
+            if response.status_code == 200:
+                data = response.json()
+                devices = data.get("data", [])
+                raw_response["ea/devices"] = data
+        except Exception as e:
+            raw_response["ea/devices"] = {"error": str(e)}
+
+        result = {
+            "sites": [], 
+            "total_devices": len(devices), 
+            "total_clients": 0,
+            "raw_response": raw_response,
+            "api_key_set": bool(self._settings.unifi_api_key),
+        }
 
         # If no sites but have devices, create a placeholder
         if not sites and all_devices:

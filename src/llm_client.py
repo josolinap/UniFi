@@ -116,18 +116,21 @@ Provide a clear answer."""
     ) -> LLMResponse:
         """Chat with network context."""
         system_prompt = """You are a helpful UniFi network administrator assistant.
-You have access to real-time UniFi network data. Always use the network data provided to answer questions about the network.
-If the data is empty or shows no sites, mention that the UniFi API returns no data and the UDM may not be linked to Site Manager.
-Be concise and informative."""
-
+You have access to UniFi network data from the Site Manager API.
+Always use the actual data provided to answer questions.
+If the data shows no sites or empty arrays, explain that:
+- The UDM may not be linked to UniFi Site Manager
+- The API key may need console/site association
+- The user may not have permission to view sites
+Suggest checking unifi.ui.com > Settings > Control Plane > Integrations."""
         data_summary = json.dumps(network_data, indent=2)
 
-        full_prompt = f"""Network Data:
+        full_prompt = f"""Network Data (UniFi Site Manager API):
 {data_summary}
 
 User question: {message}
 
-Provide a helpful answer based on the network data above."""
+Provide a helpful answer based on the actual network data above. If data is empty, explain possible causes and solutions."""
 
         return self.chat(full_prompt, system_prompt=system_prompt)
 
