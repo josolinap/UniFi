@@ -97,8 +97,17 @@ class UniFiClient:
 
     def __post_init__(self) -> None:
         """Initialize HTTP client and headers."""
+        api_type = self._settings.unifi_api_type
+        base_url = self._settings.unifi_base_url
+
+        if api_type == "cloud-ea":
+            base_url = "https://api.ui.com"
+        elif api_type == "local":
+            if not base_url or base_url == "https://api.ui.com":
+                base_url = "https://unifi.ui.com/proxy/network/api"
+
         self._client = httpx.Client(
-            base_url=self._settings.unifi_base_url,
+            base_url=base_url,
             timeout=30.0,
             verify=True,
             follow_redirects=True,

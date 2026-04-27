@@ -30,8 +30,12 @@ class Settings(BaseSettings):
         description="NVIDIA NIM API base URL",
     )
     unifi_base_url: str = Field(
-        default="https://unifi.ui.com",
-        description="UniFi API base URL",
+        default="https://api.ui.com",
+        description="UniFi API base URL (api.ui.com for Site Manager, or local controller)",
+    )
+    unifi_api_type: str = Field(
+        default="cloud-ea",
+        description="UniFi API type: cloud-ea (Site Manager), local (controller), cloud-v1",
     )
 
 
