@@ -1,8 +1,0 @@
-name: Network Monitor
-on: workflow_dispatch
-jobs:
-  ready:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Done"
-        shell: bash
